@@ -11,7 +11,7 @@
 
 import request from 'superagent';
 
-const ENDPOINT = 'https://unitrad.calil.jp/v1/';
+const ENDPOINT = 'https://b.orbit.supply/api/v1/';
 const FIELDS = ['free', 'title', 'author', 'publisher', 'isbn', 'ndc', 'year_start', 'year_end', 'region'];
 
 
