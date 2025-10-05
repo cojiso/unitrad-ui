@@ -1,6 +1,6 @@
 # Unitrad UI [![Maintainability](https://api.codeclimate.com/v1/badges/fd825472d8b0ac9e00d6/maintainability)](https://codeclimate.com/github/CALIL/unitrad-ui/maintainability)
 
-Reactで構築された蔵書検索のための汎用的なユーザーインターフェース「unitrad-ui」をフォークしたプロジェクト。
+Reactで構築された蔵書検索のための汎用的なユーザーインターフェース [unitrad-ui](CALIL/unitrad-ui) をベースに、書店検索機能を追加したものです。
 
 ![スクリーン](doc/images/screen.png)
 
@@ -14,18 +14,21 @@ Reactで構築された蔵書検索のための汎用的なユーザーインタ
 ## ローカルでの起動
 ```bash
 npm install
-npm dev
+npm run dev
 ```
 
 ## ビルド
 
 ```bash
 npm update
-npm build
+npm run build
 ```
 
 ## デモページ
 - https://u.orbit.supply
+
+## Acknowledgments
+This project is based on [unitrad-ui](CALIL/unitrad-ui) by [CALIL]. Thank you for the great work!
 
 ## ライセンスについて
 
