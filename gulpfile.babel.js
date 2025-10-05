@@ -106,12 +106,12 @@ gulp.task('build:js', () => {
 //uglify({output: {comments: /Modules in this bundle/mi}})
 
 gulp.task('copy:assets:local', () => {
-  return gulp.src([configDir + 'assets/*'], {base: configDir}).pipe(gulp.dest(destDir))
+  return gulp.src([configDir + 'assets/*'], {base: configDir, encoding: false}).pipe(gulp.dest(destDir))
 });
 
 
 gulp.task('copy:assets:global', () => {
-  return gulp.src(['src/assets/*'], {base: 'src'}).pipe(gulp.dest(destDir))
+  return gulp.src(['src/assets/*'], {base: 'src', encoding: false}).pipe(gulp.dest(destDir))
 });
 
 
@@ -152,6 +152,7 @@ gulp.task('browserSync:init', () => {
   gulp.watch(['*.html', configDir + 'index.html'], gulp.task('browserSync:reload'));
   gulp.watch(['./src/sass/*.sass', configDir + 'index.sass'], gulp.task('build:css'));
   gulp.watch('./src/js/*', gulp.series('build:js', 'browserSync:reload'));
+  // gulp.watch([configDir + 'assets/*', './src/assets/*'], gulp.series('copy:assets:local', 'copy:assets:global', 'browserSync:reload'));
 });
 
 
