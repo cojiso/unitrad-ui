@@ -4,6 +4,9 @@ Reactで構築された蔵書検索のための汎用的なユーザーインタ
 
 ![スクリーン](doc/images/screen.png)
 
+## デモページ
+- https://u.orbit.supply
+
 ## 主な特徴
 
 - シンプルで実用的なユーザーインターフェース
@@ -24,10 +27,7 @@ npm update
 npm run build
 ```
 
-## デモページ
-- https://u.orbit.supply
-
-## Acknowledgments
+## 謝辞
 This project is based on [unitrad-ui](CALIL/unitrad-ui) by [CALIL]. Thank you for the great work!
 
 ## ライセンスについて
