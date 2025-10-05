@@ -84,7 +84,7 @@ export default class Index extends React.Component<Props, State> {
     rows: 50,
     holdingOrder: null,
     externalLinks: [],
-    welcomeTitle: 'つぎの書店をまとめて検索します',
+    welcomeTitle: 'さまざまな書店があります',
     welcomeMessage: null,
     welcomeLinks: [],
     showLogo: true,
