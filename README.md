@@ -1,6 +1,6 @@
 # Unitrad UI [![Maintainability](https://api.codeclimate.com/v1/badges/fd825472d8b0ac9e00d6/maintainability)](https://codeclimate.com/github/CALIL/unitrad-ui/maintainability)
 
-Reactで構築された蔵書検索のための汎用的なユーザーインターフェース。
+Reactで構築された蔵書検索のための汎用的なユーザーインターフェース「unitrad-ui」をフォークしたプロジェクト。
 
 ![スクリーン](doc/images/screen.png)
 
@@ -11,10 +11,11 @@ Reactで構築された蔵書検索のための汎用的なユーザーインタ
 - 検索結果へのパーマリンク対応
 - ウェブアクセシビリティ対応
 
-## 起動
+## ローカルでの起動
 ```bash
 npm install
 npm start
+```
 
 ## ビルド
 
@@ -23,17 +24,8 @@ npm update
 gulp release
 ```
 
-## ロードマップ
-
-- ドキュメントの充実
-- Unitrad API以外への対応（OpenSearchなど）
-
-## 採用例
-
-- [京都府図書館総合目録ネットワーク](https://www.library.pref.kyoto.jp/cross/cross.html)
-- [県立長野図書館「信州ブックサーチ」](https://www.library.pref.nagano.jp/licsxp-opac/shinshubooksearch.html)
-- [とことんサーチ（岐阜県東濃地域）](https://tokoton.calil.jp/)
-- [さばサーチ（福井県丹南地域）](https://sabae.calil.jp/)
+## デモページ
+- https://u.orbit.supply
 
 ## ライセンスについて
 
