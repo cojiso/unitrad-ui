@@ -84,7 +84,7 @@ export default class Index extends React.Component<Props, State> {
     rows: 50,
     holdingOrder: null,
     externalLinks: [],
-    welcomeTitle: 'つぎの図書館をまとめて検索します',
+    welcomeTitle: 'つぎの書店をまとめて検索します',
     welcomeMessage: null,
     welcomeLinks: [],
     showLogo: true,
@@ -463,11 +463,11 @@ export default class Index extends React.Component<Props, State> {
                   {(() => {
                     if (this.props.linkLogo && isEmptyQuery(this.state.established_query)) {
                       return (
-                        <a href="https://calil.jp/" target="_blank" aria-label="このサービスの検索技術はカーリルが提供しています">
+                        <a href="https://b.orbit.supply/about" target="_blank" aria-label="このサービスの検索技術の提供に関する詳細はこちら">
                           <span className="poweredby"/>
                         </a>)
                     } else {
-                      return <span className="poweredby" aria-label="このサービスの検索技術はカーリルが提供しています"/>
+                      return <span className="poweredby" aria-label="このサービスの検索技術の提供に関する詳細はAboutページをご覧ください"/>
                     }
                   })()}
                 </div>

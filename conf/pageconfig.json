@@ -1,53 +1,57 @@
 {
   "siteUrl": null,
-  "title": "とことんサーチ [東濃地域の本をさがぞう]",
+  "title": "新古書店横断検索",
   "unitrad_options": {
-    "region": "gifu",
+    "region": "shops",
     "holdingOrder": [
-      100949,
-      100936,
-      100914,
-      100854,
-      100908
+      200001,
+      200002,
+      200003,
+      200004,
+      200005
     ],
     "filters": [
       {
         "id": 0,
-        "name": "東濃地域",
-        "includes": [
-          100949,
-          100936,
-          100914,
-          100854,
-          100908
-        ]
+        "name": "全ての書店",
+        "includes": []
       },
       {
         "id": 1,
-        "name": "岐阜県全域",
-        "includes": []
+        "name": "古本",
+        "includes": [
+          200001,
+          200002,
+          200003,
+          200004,
+          200005
+        ]
       }
     ],
     "welcomeLinks": [
       {
-        "name": "多治見市図書館",
-        "url": "http://www.lib.tajimi.gifu.jp/"
+        "name": "ブックオフオンライン",
+        "url": "https://shopping.bookoff.co.jp/search"
       },
       {
-        "name": "土岐市図書館",
-        "url": "http://www.city.toki.lg.jp/library/"
+        "name": "日本の古本屋",
+        "url": "https://www.kosho.or.jp"
       },
       {
-        "name": "中津川市立図書館",
-        "url": "http://library.city.nakatsugawa.gifu.jp/"
+        "name": "ネットオフ",
+        "url": "https://www.netoff.co.jp"
       },
       {
-        "name": "瑞浪市民図書館",
-        "url": "http://library.city.mizunami.gifu.jp/tosho/index.HTML"
+        "name": "もったいない本舗",
+        "url": "https://www.mottainaihonpo.com"
       },
       {
-        "name": "恵那市中央図書館",
-        "url": "http://library.city.ena.lg.jp/"
+        "name": "Amazon",
+        "url": "https://www.amazon.co.jp"
+      },
+      {
+        "name": "メルカリ",
+        "url": "https://jp.mercari.com/search"
       }
     ]
   }

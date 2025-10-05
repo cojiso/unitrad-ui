@@ -442,7 +442,7 @@ export default class Results extends React.Component<Props, State> {
                     if (this.props.linkLogo && isEmptyQuery(this.state.established_query)) {
                       return (
                         <div className="sidelogo">
-                          <a href="https://calil.jp/" target="_blank" tabIndex="-1" aria-label="カーリルのウェブサイトにリンク">
+                          <a href="https://b.orbit.supply/about" target="_blank" tabIndex="-1" aria-label="プロジェクトAboutページにリンク">
                             <span className="poweredby"/>
                           </a>
                         </div>
