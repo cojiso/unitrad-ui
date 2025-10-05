@@ -5,7 +5,8 @@
   "main": "index.html",
   "scripts": {
     "flow": "flow",
-    "start": "gulp debug --conf=./conf/",
+    "dev": "gulp debug --conf=./conf/",
+    "start": "npx serve ./build/release -p $PORT",
     "release": "gulp release",
     "build": "gulp release",
     "test": "mocha --require @babel/register",

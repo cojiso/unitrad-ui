@@ -14,14 +14,14 @@ Reactで構築された蔵書検索のための汎用的なユーザーインタ
 ## ローカルでの起動
 ```bash
 npm install
-npm start
+npm dev
 ```
 
 ## ビルド
 
 ```bash
 npm update
-gulp release
+npm build
 ```
 
 ## デモページ
