@@ -7,6 +7,7 @@
     "flow": "flow",
     "start": "gulp debug --conf=./conf/",
     "release": "gulp release",
+    "build": "gulp release",
     "test": "mocha --require @babel/register",
     "test-with-browser": "gulp test",
     "preinstall": "npx npm-force-resolutions"
