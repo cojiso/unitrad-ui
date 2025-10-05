@@ -89,9 +89,6 @@
       "browser": true
     }
   },
-  "resolutions": {
-    "glob-stream": "7.0.0"
-  },
   "engines": {
     "node": ">=18"
   }
