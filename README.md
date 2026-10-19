@@ -1,4 +1,4 @@
-# Unitrad UI [![Maintainability](https://api.codeclimate.com/v1/badges/fd825472d8b0ac9e00d6/maintainability)](https://codeclimate.com/github/CALIL/unitrad-ui/maintainability)
+# Unitrad UI
 
 Reactで構築された蔵書検索のための汎用的なユーザーインターフェース [unitrad-ui](https://github.com/CALIL/unitrad-ui) をベースに、書店検索機能を追加したものです。
 
@@ -15,6 +15,8 @@ Reactで構築された蔵書検索のための汎用的なユーザーインタ
 - ウェブアクセシビリティ対応
 
 ## ローカルでの起動
+Node.js 22 以上が必要です。
+
 ```bash
 npm install
 npm run dev
@@ -23,7 +25,7 @@ npm run dev
 ## ビルド
 
 ```bash
-npm update
+npm install
 npm run build
 ```
 
@@ -34,7 +36,7 @@ This project is based on [unitrad-ui](https://github.com/CALIL/unitrad-ui) by [C
 
 The MIT License (MIT)
 
-Copyright (c) 2023 CALIL Inc.
+Copyright (c) 2026 CALIL Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

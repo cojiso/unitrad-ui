@@ -1,4 +1,3 @@
-// @flow
 /*
 
  Unitrad UI URLパラメータと履歴
@@ -11,8 +10,25 @@
 
 const URLPARAMS = ['q', 'title', 'author', 'publisher', 'year_start', 'year_end', 'ndc', 'isbn', 'filter', 'mode'];
 
-function locationEnabled() {
+type URLQuery = UnitradQuery & { q?: string; filter?: string; mode?: string };
+
+function locationEnabled(): boolean {
   return typeof location !== 'undefined';
+}
+
+/**
+ * URLエンコードを解く
+ * 壊れたパーセント列（?q=%E6%9C%25A 等）で例外を投げると、検索ボックスごとマウントされない
+ * @param {String|undefined} value
+ * @returns {String} 解けなければ空文字
+ */
+function safeDecode(value: string | undefined): string {
+  if (value === undefined) return '';
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return '';
+  }
 }
 
 /**
@@ -20,24 +36,24 @@ function locationEnabled() {
  * @param {String} text
  * @returns {Object} queryオブジェクト
  */
-function queryParse(text: string): UnitradQuery & { q?: string, filter?: string, mode?: string } {
-  let tmp = {};
-  let unknown = {};
-  for (let k of URLPARAMS) tmp[k] = '';
+function queryParse(text: string): URLQuery {
+  const tmp: Record<string, string> = {};
+  const unknown: Record<string, string> = {};
+  for (const k of URLPARAMS) tmp[k] = '';
   text.split('&').forEach((kv) => {
-    let _tmp = kv.split('=');
-    let _k = _tmp[0];
-    if (tmp.hasOwnProperty(_k)) {
-      tmp[_k] = decodeURIComponent(_tmp[1]);
+    const _tmp = kv.split('=');
+    const _k = _tmp[0];
+    if (Object.prototype.hasOwnProperty.call(tmp, _k)) {
+      tmp[_k] = safeDecode(_tmp[1]);
     } else {
-      unknown[_k] = decodeURIComponent(_tmp[1]);
+      unknown[_k] = safeDecode(_tmp[1]);
     }
   });
   // OpenURLに関する処理
   if (unknown.url_ver === 'Z39.88-2004' || unknown.url_ver === 'z39.88-2004') {
-    for (let k in unknown) {
-      if (unknown.hasOwnProperty(k)) {
-        let key = k.toLowerCase();
+    for (const k in unknown) {
+      if (Object.prototype.hasOwnProperty.call(unknown, k)) {
+        const key = k.toLowerCase();
         switch (key) {
           case 'btitle':
           case 'jtitle':
@@ -71,19 +87,19 @@ function queryParse(text: string): UnitradQuery & { q?: string, filter?: string,
       }
     }
   }
-  return tmp;
+  return tmp as URLQuery;
 }
 
 /**
  * URLのパラメーターを取得する
  * @return {Object} parameterText
  */
-export function getParamsFromURL(): { filter?: string } {
+export function getParamsFromURL(): URLQuery {
   let text = '';
   if (locationEnabled() && location.search !== '') {
     text = location.search.split('?')[1];
   }
-  let params = queryParse(text);
+  const params = queryParse(text);
   params.free = params.q;
   delete params.q;
   return params;
@@ -98,13 +114,14 @@ export function getParamsFromURL(): { filter?: string } {
  * @returns {*}
  */
 export function buildQueryString(obj: UnitradQuery, mode: 'simple' | 'advanced', filter: number): string {
-  let tmp = [];
+  const tmp: Array<string> = [];
   if (mode === 'simple') {
     if (obj.free) tmp.push('q=' + encodeURIComponent(obj.free));
   } else {
-    for (let k of ['title', 'author', 'publisher', 'year_start', 'year_end', 'ndc', 'isbn']) {
-      if (obj[k] && obj[k] !== '') {
-        tmp.push(k + '=' + encodeURIComponent(obj[k]));
+    for (const k of ['title', 'author', 'publisher', 'year_start', 'year_end', 'ndc', 'isbn'] as const) {
+      const value = obj[k];
+      if (value && value !== '') {
+        tmp.push(k + '=' + encodeURIComponent(value));
       }
     }
   }

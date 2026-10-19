@@ -1,4 +1,3 @@
-// @flow
 /*
 
  Unitrad UI 検索結果
@@ -10,20 +9,29 @@
  */
 
 import React from 'react';
-import ReactPaginate from 'react-paginate';
+import ReactPaginateModule from 'react-paginate';
+
+/*
+ react-paginateはCommonJSで module.exports = {__esModule: true, default: Component}
+ を返す。esbuildは __toESM(..., 1) でラップし、__esModule を見ずにmodule.exports全体を
+ defaultへ入れるため、そのまま使うとコンポーネントではなくオブジェクトが渡り
+ 「Element type is invalid ... got: object」になる。browserifyはrequireをそのまま
+ 扱っていたので起きなかった。
+ */
+const ReactPaginate: any = (ReactPaginateModule as any)?.default ?? ReactPaginateModule;
 import {
   api,
   normalizeQuery,
   isEqualQuery,
   isEmptyQuery,
-} from '../api.js'
-import {processExcludes, applyIncludes, applySort, filterRemains} from '../sort.js'
-import Book from './book.jsx';
+} from '../api'
+import {processExcludes, applyIncludes, applySort, filterRemains} from '../sort'
+import Book from './book';
 
 
 type State = {
-  result: ?UnitradResult,
-  selected_id: ?string,
+  result: UnitradResult | null | undefined,
+  selected_id: string | null | undefined,
   sort_column: string,
   sort_order: '' | 'descend' | 'ascend',
   sort_class: Array<string>,
@@ -33,36 +41,39 @@ type State = {
 };
 
 type Props = {
+  filter: number,
   filters: Array<UIFilter>,
   excludes: Array<number>,
-  selected_id: ?string,
+  selected_id?: string | null,
   query: UnitradQuery,
   region: string,
   includes: Array<number>,
-  mapping: { [string]: Object },
-  lazyHidden: ?Array<string>,
+  mapping: { [key: string]: UnitradMapping },
+  lazyHidden?: Array<string> | null,
   externalLinks: Array<UIExternal>,
-  holdingLinkReplacer: ?Function,
-  holdingOrder: ?Array<number>,
+  holdingLinkReplacer?: Function | null,
+  holdingOrder?: Array<number> | null,
   rows: number,
-  customHoldingView: ?Function,
-  customDetailView: ?Function,
-  customNotFoundView: ?Function,
+  customHoldingView: React.ComponentType<any>,
+  customDetailView?: React.ComponentType<any> | null,
+  customNotFoundView?: React.ComponentType<any> | null,
   changeFilter: Function,
   hideSide: boolean,
   showLogo: boolean,
-  filterMessage: ?string,
-  filterTitle: ?string,
-  is_multiple_region: boolean
+  filterMessage?: string | null,
+  filterTitle?: string | null,
+  is_multiple_region: boolean,
+  showFooter?: boolean,
+  linkLogo?: boolean,
+  coverImage?: React.ComponentType<any>
 };
 
 
 export default class Results extends React.Component<Props, State> {
-  static defaultProps: Props;
-  _query: UnitradQuery;
-  api: api;
-  started: number;
-  ariaTime: ?number;
+  _query: UnitradQuery | undefined;
+  api: api | undefined;
+  started: number | undefined;
+  ariaTime: number | null | undefined;
 
   constructor(props: Props) {
     super(props);
@@ -73,7 +84,7 @@ export default class Results extends React.Component<Props, State> {
       sort_column: '',
       sort_order: '',
       sort_class: [],
-      region: null
+      region: ''
     };
   }
 
@@ -87,7 +98,7 @@ export default class Results extends React.Component<Props, State> {
       if (this.api) this.api.kill();
       this._query = normalizeQuery(this.props.query);
       this._query.region = this.props.region;
-      this.started = new Date();
+      this.started = Date.now();
       if (!isEmptyQuery(this._query)) {
         this.api = new api(this._query, this.doUpdate.bind(this));
       } else {
@@ -111,13 +122,14 @@ export default class Results extends React.Component<Props, State> {
     if (this.api) this.api.kill();
   }
 
-  onSelectBook(e: SyntheticInputEvent<>) {
-    if (window.getSelection().toString() !== '') return; // 選択中はクリックを処理しない
-    let current: ?Element = e.target;
+  onSelectBook(e: React.SyntheticEvent) {
+    if (window.getSelection()!.toString() !== '') return; // 選択中はクリックを処理しない
+    let current: Element | null | undefined = e.target as Element;
     while (current && current.parentNode) {
-      if (current.attributes.getNamedItem('data-id')) {
-        let hash = current.attributes.getNamedItem('data-id').value;
-        if (history.pushState && history.state !== undefined) {
+      const dataId = current.attributes.getNamedItem('data-id');
+      if (dataId) {
+        let hash = dataId.value;
+        if (typeof history.pushState === 'function' && history.state !== undefined) {
           history.pushState('selected_id', '', location.pathname + location.search + '#' + hash);
         }
         this.setState({'selected_id': hash});
@@ -130,13 +142,13 @@ export default class Results extends React.Component<Props, State> {
   // #(hash)を消す
   removeHash() {
     if (location.hash !== '') {
-      if (history.pushState && history.state !== undefined) {
+      if (typeof history.pushState === 'function' && history.state !== undefined) {
         history.replaceState('search', '', location.pathname + location.search);
       } else {
         location.hash = '';
       }
     }
-    this.state.selected_id = null;
+    (this.state as any).selected_id = null;
   }
 
   onClose() {
@@ -149,16 +161,16 @@ export default class Results extends React.Component<Props, State> {
     this.setState({page: data.selected, selected_id: null});
   }
 
-  onSort(e: SyntheticInputEvent<>) {
+  onSort(e: React.SyntheticEvent) {
     this.removeHash();
-    let target: null | Element & HTMLElement = e.target;
+    let target: null | Element & HTMLElement = e.target as Element & HTMLElement;
     while (target && !target.className.match('sort')) {
       target = target.parentElement;
     }
     let names = ['triangle'];
     let column = target && target.dataset ? target.dataset.sortColumn : null;
     if (typeof column !== 'string') return;
-    const firstOrders = {
+    const firstOrders: { [key: string]: 'ascend' | 'descend' } = {
       title: 'ascend',
       author: 'ascend',
       publisher: 'ascend',
@@ -166,7 +178,7 @@ export default class Results extends React.Component<Props, State> {
       isbn: 'ascend',
       holdings: 'descend'
     };
-    let nextOrder;
+    let nextOrder: '' | 'ascend' | 'descend';
     let currentOrder: string = (this.state.sort_column === column) ? this.state.sort_order : '';
     if (currentOrder === '') {
       nextOrder = firstOrders[column];
@@ -182,8 +194,8 @@ export default class Results extends React.Component<Props, State> {
     this.setState({page: 0, sort_column: column, sort_order: nextOrder, sort_class: names});
   }
 
-  onSortKeyUp(e: SyntheticInputEvent<>) {
-    e = e || window.event;
+  onSortKeyUp(e: React.KeyboardEvent) {
+    e = e || (window.event as any);
     if (e.keyCode === 13) {
       e.stopPropagation();
       this.onSort(e);
@@ -195,7 +207,7 @@ export default class Results extends React.Component<Props, State> {
   }
 
   render() {
-    let _books = [];
+    let _books: Array<UnitradBook> = [];
     let message: string = '';
     let notfound = false;
     let complete = false;
@@ -221,11 +233,11 @@ export default class Results extends React.Component<Props, State> {
 
       if (this.state.result) {
         if (this.state.result.running && _remains.length > 0) {
-          if (this.started && new Date() - this.started < 1500 && _books.length === 0) {
+          if (this.started && Date.now() - this.started < 1500 && _books.length === 0) {
             message = 'さがしています。';
           } else {
             message = String(_books.length) + "件見つかりました。";
-            if (_remains.length < 5 && (this.started && new Date() - this.started > 5000)) {
+            if (_remains.length < 5 && (this.started && Date.now() - this.started > 5000)) {
               message += _remains.join(',') + "は時間がかかっています。";
             } else {
               message += "あと " + _remains.length + "館。"
@@ -259,9 +271,9 @@ export default class Results extends React.Component<Props, State> {
       }
     }
     let messageAria = '';
-    if (this.ariaTime && new Date() - this.ariaTime < 5000) {
+    if (this.ariaTime && Date.now() - this.ariaTime < 5000) {
     } else {
-      this.ariaTime = new Date();
+      this.ariaTime = Date.now();
       messageAria = message;
       message = '';
     }
@@ -274,6 +286,10 @@ export default class Results extends React.Component<Props, State> {
       {label: 'ISBN', id: 'isbn'},
       {label: '所蔵館', id: 'holdings'}
     ];
+    let classNames = ['results', `region-${this.props.region}`, `filter-${this.props.filter}`];
+    if (_books.length === 0 || isEmptyQuery(this.props.query)) {
+      classNames.push('empty');
+    }
 
     return (
       <div
@@ -302,8 +318,8 @@ export default class Results extends React.Component<Props, State> {
             })()}
           </div>
           <div
-            className={'results region-' + this.props.region + (_books.length === 0 || isEmptyQuery(this.props.query) ? ' empty' : '')}
-            aria-busy={this.state.result && this.state.result.running}
+            className={classNames.join(' ')}
+            aria-busy={this.state.result ? this.state.result.running : undefined}
             aria-rowcount={_books.length}
             aria-readonly="true"
             role="grid">
@@ -325,8 +341,8 @@ export default class Results extends React.Component<Props, State> {
                      role="columnheader"
                      className={header.id + ' sort'}
                      data-sort-column={header.id}
-                     tabIndex="0"
-                     aria-sort={(this.state.sort_column === header.id && this.state.sort_order !== '') ? this.state.sort_order + 'ing' : 'none'}
+                     tabIndex={0}
+                     aria-sort={((this.state.sort_column === header.id && this.state.sort_order !== '') ? this.state.sort_order + 'ing' : 'none') as any}
                      onKeyUp={this.onSortKeyUp.bind(this)}
                      onClick={this.onSort.bind(this)}>
                     {header.label}
@@ -442,7 +458,8 @@ export default class Results extends React.Component<Props, State> {
                     if (this.props.linkLogo && isEmptyQuery(this.state.established_query)) {
                       return (
                         <div className="sidelogo">
-                          <a href="https://b.orbit.supply/about" target="_blank" tabIndex="-1" aria-label="プロジェクトAboutページにリンク">
+                          <a href="https://b.orbit.supply/about" target="_blank" tabIndex={-1}
+                             aria-label="プロジェクトAboutページにリンク">
                             <span className="poweredby"/>
                           </a>
                         </div>

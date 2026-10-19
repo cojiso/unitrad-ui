@@ -1,4 +1,3 @@
-// @flow
 /*
 
  Unitrad UI Book
@@ -10,13 +9,21 @@
  */
 
 import React from 'react';
-import {api} from '../api.js'
-import {processExcludes, unresolvedHoldings, countHoldings, intersectHoldings} from '../sort.js'
+import {api} from '../api'
+import {processExcludes, unresolvedHoldings, countHoldings, intersectHoldings} from '../sort'
+
+/* doUpdate が組み立てる所蔵の集約。書誌の全項目は持たない */
+type BookDeep = {
+  url: { [key: string]: string },
+  holdings: Array<number>,
+  bid: { [key: string]: string }
+};
 
 type State = {
-  uuid: ?string,
-  book_deep: ?UnitradBook,
-  unresolvedHoldings: Array<number>
+  uuid: string | null | undefined,
+  book_deep: BookDeep | null | undefined,
+  unresolvedHoldings: Array<number>,
+  remains?: Array<string> | null
 };
 
 type Props = {
@@ -29,18 +36,21 @@ type Props = {
   region: string,
   onSelect: Function,
   onClose: Function,
-  name_to_id: { [string]: Array<number> },
-  libraries: { [number]: string },
-  holdingOrder: ?Array<number>,
-  customHoldingView: ?Function,
-  holdingLinkReplacer: ?Function,
-  remains: ?Array<string>
+  name_to_id: { [key: string]: Array<number> },
+  libraries: { [key: number]: string },
+  holdingOrder?: Array<number> | null,
+  customHoldingView: React.ComponentType<any>,
+  customDetailView?: React.ComponentType<any> | null,
+  coverImage?: React.ComponentType<any>,
+  isbnAdvanced?: boolean,
+  holdingLinkReplacer?: Function | null,
+  remains?: Array<string> | null
 }
 
 export default class Book extends React.Component<Props, State> {
-  static defaultProps: Props;
-  api: api;
-  state = {
+  api: api | undefined;
+  deep_requested: boolean = false;
+  state: State = {
     uuid: null,
     book_deep: null,
     unresolvedHoldings: []
@@ -50,7 +60,7 @@ export default class Book extends React.Component<Props, State> {
     if (this.props.opened && !this.api) {
       console.log('start deep search');
       this.api = new api({
-        isbn: this.props.book.isbn,
+        isbn: this.props.book.isbn ?? undefined,
         region: this.props.region
       }, this.doUpdate.bind(this));
     }
@@ -60,30 +70,29 @@ export default class Book extends React.Component<Props, State> {
     processExcludes(data.books, this.props.excludes);
 
     // 高精度化実験
-    let book_deep;
+    let book_deep: BookDeep | null;
     if (data.books.length >= 1) {
-      if (!book_deep) {
-        book_deep = {
-          url: {},
-          holdings: [],
-          bid: {}
-        };
-      }
+      const deep: BookDeep = {
+        url: {},
+        holdings: [],
+        bid: {}
+      };
       data.books.map((book) => {
         // 検索結果が別のISBNの場合には無視する
         if (book.id.indexOf('-') === -1 && book.id !== this.props.book.id) {
           return
         }
-        book_deep.holdings = [...book_deep.holdings, ...book.holdings];
+        deep.holdings = [...deep.holdings, ...book.holdings];
         for (let id in book.url) {
-          if (book.url.hasOwnProperty(id)) {
-            if (!book_deep.url.hasOwnProperty(id)) {
-              book_deep.url[id] = book.url[id];
-              book_deep.bid[id] = book.id;
+          if (Object.prototype.hasOwnProperty.call(book.url, id)) {
+            if (!deep.url.hasOwnProperty(id)) {
+              deep.url[id] = book.url[id];
+              deep.bid[id] = book.id;
             }
           }
         }
       })
+      book_deep = deep;
     } else {
       book_deep = null;
     }
@@ -96,8 +105,8 @@ export default class Book extends React.Component<Props, State> {
     });
   }
 
-  onKeyUp(e: SyntheticEvent<>) {
-    e = e || window.event;
+  onKeyUp(e: React.KeyboardEvent) {
+    e = e || (window.event as any);
     if (e.keyCode === 13) {
       e.stopPropagation();
       this.props.onSelect(e);
@@ -109,6 +118,9 @@ export default class Book extends React.Component<Props, State> {
   }
 
   render() {
+    /* Index が customHoldingView の未指定・null を DefaultHoldingView に補って渡すため必ず値がある */
+    const CustomHoldingView = this.props.customHoldingView;
+
     /* 有効な所蔵情報を集約する
      * ・現在Deep検索中（またはエラー）で、推定所蔵データがあるものは追加
      * ・すべての確定所蔵は追加
@@ -125,7 +137,7 @@ export default class Book extends React.Component<Props, State> {
     let hcount = countHoldings(virtual_holdings, this.props.includes);
 
     return (
-      <div tabIndex="0" className={'row book ' + (this.props.opened ? 'opened' : '')}
+      <div tabIndex={0} className={'row book ' + (this.props.opened ? 'opened' : '')}
            role="row"
            aria-expanded={this.props.opened}
            aria-rowindex={this.props.index}
@@ -137,8 +149,8 @@ export default class Book extends React.Component<Props, State> {
                ((this.props.book.publisher) ? "出版者。" + this.props.book.publisher + "。" : "") +
                ((this.props.book.pubdate) ? "出版年。" + this.props.book.pubdate + "。" : "") +
                ((this.props.book.isbn === '' || this.props.book.isbn === null) ? '' : 'ISBNあり。'))}
-           onKeyUp={!this.props.opened ? this.onKeyUp.bind(this) : null}
-           onClick={!this.props.opened ? this.props.onSelect.bind(this) : null}>
+           onKeyUp={!this.props.opened ? this.onKeyUp.bind(this) : undefined}
+           onClick={!this.props.opened ? this.props.onSelect.bind(this) : undefined}>
         {(() => {
           if (this.props.coverImage) {
             return (
@@ -156,7 +168,7 @@ export default class Book extends React.Component<Props, State> {
         <div className={'isbn' + (this.props.book.isbn !== '' && this.props.book.isbn !== null ? ' exist' : '')}
              role="gridcell">
           {(() => {
-            if (this.props.isbnAdvanced && this.props.book._isbn.length >= 10 && (this.props.book._isbn.slice(0, 3) === '978' || this.props.book._isbn.slice(0, 3) === "\u2002\u2002\u2002")) {
+            if (this.props.isbnAdvanced && this.props.book._isbn.length >= 10 && (this.props.book._isbn.slice(0, 3) === '978' || this.props.book._isbn.slice(0, 3) === "   ")) {
               let block1 = this.props.book._isbn.slice(0, 3);
               let block2 = this.props.book._isbn.slice(3, 4);
               let block3 = this.props.book._isbn.slice(4);
@@ -189,7 +201,7 @@ export default class Book extends React.Component<Props, State> {
         <div className="holdings" role="gridcell">
           {(() => {
             if (this.props.opened) {
-              return (<button role="button" aria-label="閉じる" tabIndex="0" className="close"
+              return (<button role="button" aria-label="閉じる" tabIndex={0} className="close"
                               onClick={this.props.onClose.bind(this)}>&times;</button>)
             } else {
               if (hcount === 1) {
@@ -232,7 +244,6 @@ export default class Book extends React.Component<Props, State> {
             } else {
               virtual_holdings.sort(); // holdingOrderがない場合はID順とする
             }
-
             return (
               <div className="detail">
                 <div className="count">
@@ -276,12 +287,13 @@ export default class Book extends React.Component<Props, State> {
                         bid = this.props.book.id;
                       } else if (this.state.book_deep && this.state.book_deep.url[holding]) {
                         url = this.state.book_deep.url[holding];
-                        bid = this.state.book_deep.bid[holding];
                         uuid = this.state.uuid;
+                        bid = this.state.book_deep.bid[holding];
                       }
                       if (url && this.props.holdingLinkReplacer) url = this.props.holdingLinkReplacer(url);
+
                       return (
-                        <this.props.customHoldingView url={url}
+                        <CustomHoldingView url={url}
                                                       key={holding}
                                                       uuid={uuid}
                                                       libid={holding}

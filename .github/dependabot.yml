@@ -1,0 +1,77 @@
+# Dependabot 設定
+# https://docs.github.com/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+#
+# これまで dependabot.yml が無く、Dependabot alerts 起点のセキュリティ更新しか
+# 動いていなかったため、バージョン更新も定期的に回すようにする。
+#
+# 方針: minor/patch はグループ化して 1 PR にまとめ、major は個別 PR で判断する。
+#       リリース直後の不具合や yank を踏まないよう cooldown で寝かせてから PR を出す。
+
+version: 2
+
+updates:
+  # ---------------------------------------------------------------------------
+  # npm
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "javascript"
+    commit-message:
+      prefix: "chore(deps)"
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+    ignore:
+      # @types/node のメジャーは Node.js 本体のメジャーに対応しているので、
+      # サポート下限（package.json の engines = >=22）より先に上げてはいけない。
+      # 上げると新しい Node.js で追加された API を tsc が通してしまい、
+      # engines を満たすはずの Node.js 22 環境で初めて落ちる。
+      #
+      # CI では気づけない。node-version-file が engines の >=22 を解決するので
+      # ランナーには最新の 24 系が入り、22 では無い API も動いてしまう。
+      # Node.js を上げるときに engines と一緒に手で上げる。
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+    groups:
+      npm-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ---------------------------------------------------------------------------
+  # GitHub Actions (.github/workflows)
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci(deps)"
+    # github-actions では semver-major-days は使えない。
+    # 指定すると設定ファイル全体が弾かれ、Dependabot がまったく動かなくなる。
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"

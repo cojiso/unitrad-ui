@@ -1,4 +1,3 @@
-// @flow
 /*
 
  Unitrad UI APIライブラリ
@@ -9,11 +8,12 @@
 
  */
 
-import request from 'superagent';
+import request from './request';
 
 const ENDPOINT = 'https://b.orbit.supply/api/v1/';
 const FIELDS = ['free', 'title', 'author', 'publisher', 'isbn', 'ndc', 'year_start', 'year_end', 'region'];
 
+const hasOwn = (obj: object, key: string): boolean => Object.prototype.hasOwnProperty.call(obj, key);
 
 /**
  * Unitrad APIにアクセスするための共通関数
@@ -21,7 +21,7 @@ const FIELDS = ['free', 'title', 'author', 'publisher', 'isbn', 'ndc', 'year_sta
  * @returns {Object}
  * @private
  */
-function _request(command) {
+function _request(command: string) {
   return request.get(ENDPOINT + command);
 }
 
@@ -35,7 +35,7 @@ export class api {
    */
   callback: (data: UnitradResult) => void;
   killed: boolean;
-  data: UnitradResult;
+  data: UnitradResult | undefined;
 
   constructor(query: UnitradQuery, callback: (data: UnitradResult) => void) {
     this.callback = callback;
@@ -52,7 +52,7 @@ export class api {
 
   search(query: UnitradQuery) {
     if (!this.killed) {
-      _request('search').query(stripQuery(query)).end((err, res) => {
+      _request('search').query(stripQuery(query)).end((err: any, res: any) => {
         if (!err) {
           this.receive(res.body);
         } else {
@@ -64,6 +64,7 @@ export class api {
 
   polling() {
     if (!this.killed) {
+      if (!this.data) return;
       _request('polling')
         .query({
           uuid: this.data.uuid,
@@ -71,7 +72,7 @@ export class api {
           diff: 1,
           timeout: 10
         })
-        .end((err, res) => {
+        .end((err: any, res: any) => {
           if (res.body === null) {
             setTimeout(() => this.polling(), 100)
           } else {
@@ -84,25 +85,28 @@ export class api {
   receive(data: UnitradResult) {
     if (!this.killed) {
       if (data.books_diff) {
+        if (!this.data) return;
         Array.prototype.push.apply(this.data.books, data.books_diff.insert);
-        for (let key in data) {
-          if (data.hasOwnProperty(key) && key !== 'books_diff') {
-            this.data[key] = data[key];
+        for (const key in data) {
+          if (hasOwn(data, key) && key !== 'books_diff') {
+            (this.data as any)[key] = (data as any)[key];
           }
         }
-        for (let d of data.books_diff.update) {
-          for (let key in d) {
-            if (d.hasOwnProperty(key) && key !== '_idx') {
-              if (Array.isArray(d[key]) === true) {
-                Array.prototype.push.apply(this.data.books[d._idx][key], d[key]);
-              } else if (d[key] instanceof Object) {
-                for (let k in d[key]) {
-                  if (d[key].hasOwnProperty(k)) {
-                    this.data.books[d._idx][key][k] = d[key][k];
+        for (const d of data.books_diff.update) {
+          for (const key in d) {
+            if (hasOwn(d, key) && key !== '_idx') {
+              const value = (d as any)[key];
+              const book = this.data.books[d._idx] as any;
+              if (Array.isArray(value) === true) {
+                Array.prototype.push.apply(book[key], value);
+              } else if (value instanceof Object) {
+                for (const k in value) {
+                  if (hasOwn(value, k)) {
+                    book[key][k] = value[k];
                   }
                 }
               } else {
-                this.data.books[d._idx][key] = d[key];
+                book[key] = value;
               }
             }
           }
@@ -132,11 +136,11 @@ export class api {
  * @returns {Object}
  */
 export function normalizeQuery(query: UnitradQueryLoose): UnitradQuery {
-  let tmp = {};
-  for (let k of FIELDS) {
+  const tmp: Record<string, string> = {};
+  for (const k of FIELDS) {
     tmp[k] = query[k] ? query[k] : '';
   }
-  return tmp
+  return tmp as UnitradQuery
 }
 
 
@@ -146,11 +150,11 @@ export function normalizeQuery(query: UnitradQueryLoose): UnitradQuery {
  * @param query
  * @returns {boolean}
  */
-export function isEmptyQuery(query: ?UnitradQuery): boolean {
+export function isEmptyQuery(query: UnitradQuery | null | undefined): boolean {
   if (query) {
-    for (let k of FIELDS) {
+    for (const k of FIELDS) {
       if (k === 'region') continue;
-      if (query.hasOwnProperty(k) && query[k] !== '') return false
+      if (hasOwn(query, k) && (query as any)[k] !== '') return false
     }
   }
   return true
@@ -163,10 +167,10 @@ export function isEmptyQuery(query: ?UnitradQuery): boolean {
  * @param q2 比較先クエリ
  * @returns {boolean}
  */
-export function isEqualQuery(q1: UnitradQuery, q2: UnitradQuery): boolean {
-  for (let k of FIELDS) {
+export function isEqualQuery(q1: UnitradQuery | null | undefined, q2: UnitradQuery | null | undefined): boolean {
+  for (const k of FIELDS) {
     if (k === 'region') continue;
-    if ((q1 && q1.hasOwnProperty(k) ? q1[k] : '') !== (q2 && q2.hasOwnProperty(k) ? q2[k] : '')) return false
+    if ((q1 && hasOwn(q1, k) ? (q1 as any)[k] : '') !== (q2 && hasOwn(q2, k) ? (q2 as any)[k] : '')) return false
   }
   return true
 }
@@ -178,23 +182,39 @@ export function isEqualQuery(q1: UnitradQuery, q2: UnitradQuery): boolean {
  * @returns {Object} query
  */
 export function stripQuery(query: UnitradQuery): UnitradQuery {
-  let tmp = {};
-  for (let k of FIELDS) {
-    if (query.hasOwnProperty(k) && query[k] !== '') {
-      tmp[k] = query[k];
+  const tmp: Record<string, string> = {};
+  for (const k of FIELDS) {
+    if (hasOwn(query, k) && (query as any)[k] !== '') {
+      tmp[k] = (query as any)[k];
     }
   }
-  return tmp
+  return tmp as UnitradQuery
 }
 
 /**
  * マッピングデータを取得する
  * @param region {String} リージョン
- * @param callback(data) コールバック関数
+ * @param callback
  */
 export function fetchMapping(region: string, callback: (data: any) => void): void {
-  _request('mapping').query({'region': region}).end((err, res) => {
-    callback(res.body)
-  })
-}
+  const MAX_RETRIES = 10; // 最大リトライ回数
+  const RETRY_DELAY = 2000; // リトライ間隔（ミリ秒）
+  let attempt = 0;
 
+  function tryFetch() {
+    _request('mapping')
+      .query({'region': region})
+      .end((err: any, res: any) => {
+        if (!err) {
+          callback(res.body);
+        } else if (attempt < MAX_RETRIES) {
+          attempt++;
+          setTimeout(tryFetch, RETRY_DELAY);
+        } else {
+          console.error(`[fetchMapping] Failed after ${MAX_RETRIES} retries.`);
+        }
+      });
+  }
+
+  tryFetch();
+}
